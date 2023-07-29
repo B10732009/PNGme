@@ -63,7 +63,7 @@ impl std::fmt::Display for Chunk {
 }
 
 impl Chunk {
-    fn new(chunk_type: ChunkType, data: Vec<u8>) -> Chunk {
+    pub fn new(chunk_type: ChunkType, data: Vec<u8>) -> Chunk {
         let crc_bytes: Vec<u8> = chunk_type
             .bytes()
             .iter()
@@ -78,30 +78,30 @@ impl Chunk {
         };
     }
 
-    fn length(&self) -> u32 {
+    pub fn length(&self) -> u32 {
         return self.m_length;
     }
 
-    fn chunk_type(&self) -> &ChunkType {
+    pub fn chunk_type(&self) -> &ChunkType {
         return &self.m_chunk_type;
     }
 
-    fn data(&self) -> &[u8] {
+    pub fn data(&self) -> &[u8] {
         return &self.m_data;
     }
 
-    fn crc(&self) -> u32 {
+    pub fn crc(&self) -> u32 {
         return self.m_crc;
     }
 
-    fn data_as_string(&self) -> Result<String, String> {
+    pub fn data_as_string(&self) -> Result<String, String> {
         if let Ok(s) = std::str::from_utf8(&self.m_data) {
             return Ok(String::from(s));
         }
         return Err(String::from("[Chunk] Fail to transform data to string."));
     }
 
-    fn as_bytes(&self) -> Vec<u8> {
+    pub fn as_bytes(&self) -> Vec<u8> {
         let bytes: Vec<u8> = self
             .m_length
             .to_be_bytes()
