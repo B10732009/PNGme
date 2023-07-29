@@ -58,7 +58,7 @@ impl std::fmt::Display for Chunk {
         //     self.m_length, self.m_chunk_type, self.m_data, self.m_crc
         // );
 
-        return write!(f, "{}", self.data_as_string().unwrap());
+        return write!(f, "Chunk: {{ Length: {:?}, {:?}, ChunkData: {:?}, Crc: {:?}}}", self.length(), self.chunk_type(), self.data(), self.crc());
     }
 }
 
@@ -95,6 +95,7 @@ impl Chunk {
     }
 
     pub fn data_as_string(&self) -> Result<String, String> {
+        // let ss: String = String::from_utf8_lossy(&self.m_data);
         if let Ok(s) = std::str::from_utf8(&self.m_data) {
             return Ok(String::from(s));
         }

@@ -28,7 +28,7 @@ impl std::convert::TryFrom<&[u8]> for Png {
             let data_len: u32 = u32::from_be_bytes(data_len_bytes);
 
             // length(4 bytes) + chunk_type(4 bytes) + chunk_data(length bytes) + crc(4 bytes)
-            let total_len: u32 = data_len + 12; 
+            let total_len: u32 = data_len + 12;
 
             let chunk: Chunk = Chunk::try_from(&bytes[i..i + (total_len as usize)])?;
             chunks.push(chunk);
@@ -42,26 +42,26 @@ impl std::convert::TryFrom<&[u8]> for Png {
 
 impl std::fmt::Display for Png {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Png {{ header: {:?}, chunks: {{", self.header())?;
+        write!(f, "Png {{\n\tHeader: {:?},\n\tchunks: {{\n", self.header())?;
         for chunk in self.chunks() {
-            write!(f, "{}, ", chunk)?;
+            write!(f, "\t\t{:?},\n", chunk)?;
         }
-        write!(f, "}} }}")
+        write!(f, "\t}}\n}}\n")
     }
 }
 
 impl Png {
     const STANDARD_HEADER: [u8; 8] = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
 
-    fn from_chunks(chunks: Vec<Chunk>) -> Png {
+    pub fn from_chunks(chunks: Vec<Chunk>) -> Png {
         return Self { m_chunks: chunks };
     }
 
-    fn append_chunk(&mut self, chunk: Chunk) {
+    pub fn append_chunk(&mut self, chunk: Chunk) {
         self.m_chunks.push(chunk);
     }
 
-    fn remove_chunk(&mut self, chunk_type: &str) -> Result<Chunk, String> {
+    pub fn remove_chunk(&mut self, chunk_type: &str) -> Result<Chunk, String> {
         if let Some(i) = self
             .m_chunks
             .iter()
@@ -72,15 +72,15 @@ impl Png {
         return Err(String::from("[Png] cannot remove chunk type."));
     }
 
-    fn header(&self) -> &[u8; 8] {
+    pub fn header(&self) -> &[u8; 8] {
         return &Self::STANDARD_HEADER;
     }
 
-    fn chunks(&self) -> &[Chunk] {
+    pub fn chunks(&self) -> &[Chunk] {
         return &self.m_chunks;
     }
 
-    fn chunk_by_type(&self, chunk_type: &str) -> Option<&Chunk> {
+    pub fn chunk_by_type(&self, chunk_type: &str) -> Option<&Chunk> {
         if let Some(i) = self
             .m_chunks
             .iter()
@@ -91,7 +91,7 @@ impl Png {
         return None;
     }
 
-    fn as_bytes(&self) -> Vec<u8> {
+    pub fn as_bytes(&self) -> Vec<u8> {
         let bytes: Vec<u8> = Self::STANDARD_HEADER
             .iter()
             .copied()
