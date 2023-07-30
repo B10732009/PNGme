@@ -36,7 +36,8 @@ My implementation of a small Rust project from [here](https://picklenerd.github.
     ```
 
     - The data will be printed in `json-like` format.
-        ```json
+
+      ```py
         Png: {
             Header: [137, 80, 78, 71, 13, 10, 26, 10],
             Chunks: {
