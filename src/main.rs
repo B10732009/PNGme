@@ -2,7 +2,6 @@ use std::env;
 use std::fs::File;
 use std::io::{Read, Write};
 use std::path::Path;
-use std::str::FromStr;
 
 use crate::chunk::Chunk;
 use crate::chunk_type::ChunkType;
@@ -12,9 +11,6 @@ mod chunk;
 mod chunk_type;
 mod png;
 
-// pub type Error = Box<dyn std::error::Error>;
-// pub type Result<T> = std::result::Result<T, Error>;
-
 fn read_args() -> Vec<String> {
     return env::args().collect();
 }
@@ -22,7 +18,7 @@ fn read_args() -> Vec<String> {
 fn read_png(fname: &str) -> Result<Vec<u8>, String> {
     let pname = Path::new(fname);
     if !pname.exists() {
-        return Err(String::from("File is not found."));
+        return Err(String::from("[Main] File is not found."));
     }
 
     let mut buf: Vec<u8> = Vec::new();
@@ -34,11 +30,6 @@ fn read_png(fname: &str) -> Result<Vec<u8>, String> {
 }
 
 fn write_png(fname: &str, buf: &Vec<u8>) -> Result<(), String> {
-    let pname = Path::new(fname);
-    // if pname.exists() {
-    //     return Err(String::from("File already exists."));
-    // }
-
     let mut f = File::create(fname).unwrap();
     let _ = f.write_all(buf);
 
@@ -47,15 +38,12 @@ fn write_png(fname: &str, buf: &Vec<u8>) -> Result<(), String> {
 
 fn encode(src_fname: &str, dst_fname: &str, chunk_type: &str, msg: &str) -> Result<(), String> {
     let buf = read_png(src_fname)?;
-    let mut png = Png::try_from(buf.as_slice())?;
+    let mut png = Png::from_bytes(&buf)?;
 
-    let new_chunk_type = ChunkType::from_str(chunk_type)?;
-    let new_data = msg.as_bytes().to_vec();
-    let new_chunk = Chunk::new(new_chunk_type, new_data);
+    let new_chunk = Chunk::from_str(chunk_type, msg)?;
+    png.add_chunk(new_chunk);
 
-    png.append_chunk(new_chunk);
-
-    let new_buf = png.as_bytes();
+    let new_buf = png.bytes();
     let _ = write_png(dst_fname, &new_buf)?;
 
     return Ok(());
@@ -63,21 +51,22 @@ fn encode(src_fname: &str, dst_fname: &str, chunk_type: &str, msg: &str) -> Resu
 
 fn decode(src_fname: &str, chunk_type: &str) -> Result<String, String> {
     let buf = read_png(src_fname)?;
-    let mut png = Png::try_from(buf.as_slice())?;
+    let png = Png::from_bytes(&buf)?;
 
-    if let Some(chunk) = png.chunk_by_type(chunk_type) {
-        return Ok(chunk.to_string());
+    let chunk_res = png.search_chunk(chunk_type);
+    match chunk_res {
+        Some(chunk) => return Ok(String::from(chunk.data_str())),
+        None => return Err(String::from("[Main] Chunk is not found.")),
     }
-    return Err(String::from("Chunk not found."));
 }
 
-fn remove(src_fname: &str, chunk_type: &str) -> Result<(), String> {
-    let rbuf = read_png(src_fname)?;
-    let mut png = Png::try_from(rbuf.as_slice())?;
+fn delete(src_fname: &str, chunk_type: &str) -> Result<(), String> {
+    let buf = read_png(src_fname)?;
+    let mut png = Png::from_bytes(&buf)?;
 
-    let _ = png.remove_chunk(chunk_type)?;
+    let _ = png.delete_chunk(chunk_type)?;
 
-    let new_buf = png.as_bytes();
+    let new_buf = png.bytes();
     let _ = write_png(src_fname, &new_buf)?;
 
     return Ok(());
@@ -85,48 +74,45 @@ fn remove(src_fname: &str, chunk_type: &str) -> Result<(), String> {
 
 fn print(src_fname: &str) -> Result<(), String> {
     let buf = read_png(src_fname)?;
-    let png = Png::try_from(buf.as_slice())?;
+    let png = Png::from_bytes(&buf)?;
     print!("{}\n", png);
 
     return Ok(());
 }
 
-// fn execute(args: &Vec<String>) ->
+fn execute(args: &Vec<String>) -> Result<(), String> {
+    if args[1] == "encode" && args.len() == 6 {
+        return encode(&args[2], &args[3], &args[4], &args[5]);
+    } else if args[1] == "decode" && args.len() == 4 {
+        let res = decode(&args[2], &args[3]);
+        match res {
+            Ok(s) => {
+                print!("Decoded Message: {}\n", s);
+                return Ok(());
+            }
+            Err(s) => return Err(s),
+        }
+    } else if args[1] == "delete" && args.len() == 4 {
+        return delete(&args[2], &args[3]);
+    } else if args[1] == "print" && args.len() == 3 {
+        return print(&args[2]);
+    } else {
+        return Err(String::from(
+            "[Main] Invalid parameters or parameter number.",
+        ));
+    }
+}
 
 fn main() {
     let args = read_args();
     if args.len() < 3 {
-        print!("Invalid number of arguments.\n");
+        print!("[Main] Invalid number of arguments.\n");
         return;
     }
 
-    print!("{:?}\n", args);
-
-    if args[1] == "encode" && args.len() == 6 {
-        let ret = encode(&args[2], &args[3], &args[4], &args[5]);
-        match ret {
-            Ok(()) => (),
-            Err(s) => print!("{}\n", s),
-        }
-    } else if args[1] == "decode" && args.len() == 4 {
-        let ret = decode(&args[2], &args[3]);
-        match ret {
-            Ok(s) => print!("{}\n", s),
-            Err(s) => print!("{}\n", s),
-        }
-    } else if args[1] == "remove" {
-        let ret = remove(&args[2], &args[3]);
-        match ret {
-            Ok(()) => (),
-            Err(s) => print!("{}\n", s),
-        }
-    } else if args[1] == "print" && args.len() == 3 {
-        let ret = print(&args[2]);
-        match ret {
-            Ok(()) => (),
-            Err(s) => print!("{}\n", s),
-        }
-    } else {
-        eprint!("Invalid number or content of parameters.\n");
+    let res = execute(&args);
+    match res {
+        Ok(()) => (),
+        Err(s) => print!("{}\n", s),
     }
 }

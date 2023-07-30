@@ -5,13 +5,13 @@ import sys
 import random
 from PIL import Image
 
-if len(sys.argv) != 3:
-    print('Usage: python3 generate_png.py <height> <width>.')
+if len(sys.argv) != 4:
+    print('Usage: python3 generate_png.py <fname> <height> <width>.')
 
-_, height, width = sys.argv
+_, fname, height, width = sys.argv
 
 if (not height.isdigit()) or (not width.isdigit()):
-    print('Usage: python3 generate_png.py <height> <width>.')
+    print('Usage: python3 generate_png.py <fname> <height> <width>.')
 
 height_i = int(height)
 width_i = int(width)
@@ -23,4 +23,4 @@ pixels = [(random.randint(0, 255),
 
 img = Image.new("RGB", (width_i, height_i))
 img.putdata(pixels)
-img.save("image.png", "PNG")
+img.save(fname, "PNG")
